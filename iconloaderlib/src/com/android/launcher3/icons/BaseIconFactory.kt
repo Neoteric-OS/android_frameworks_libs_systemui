@@ -328,7 +328,13 @@ constructor(
         icon as? AdaptiveIconDrawable
             ?: AdaptiveIconDrawable(
                     ColorDrawable(options?.wrapperBackgroundColor ?: DEFAULT_WRAPPER_BACKGROUND),
-                    icon.wrapIntoSquareDrawable(LEGACY_ICON_SCALE),
+                    // A drawable that already fills its own bounds, e.g. one an icon pack has
+                    // masked itself, must not be shrunk to the legacy icon scale on top of that.
+                    icon.wrapIntoSquareDrawable(
+                        if (icon.changingConfigurations and CONFIG_HINT_NO_WRAP == 0)
+                            LEGACY_ICON_SCALE
+                        else 1 - AdaptiveIconDrawable.getExtraInsetFraction()
+                    ),
                 )
                 .apply { setBounds(0, 0, 1, 1) }
 
@@ -507,6 +513,12 @@ constructor(
     }
 
     companion object {
+
+        /**
+         * Hint set on a [Drawable.getChangingConfigurations] to say it is already shaped to fill
+         * the icon bounds, so wrapping it into an adaptive icon should not scale it down.
+         */
+        const val CONFIG_HINT_NO_WRAP: Int = 0x1000000
 
         /** Two badge sizes across a handful of profiles; this is plenty of room. */
         private const val MAX_USER_BADGE_ENTRIES = 50
