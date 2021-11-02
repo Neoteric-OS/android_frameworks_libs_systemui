@@ -264,9 +264,11 @@ public class IconProvider {
      * and system-version.
      */
     public void updateSystemState() {
-        mSystemState = mSystemState.withLocaleAndSdk(
+        // Use the build id rather than the SDK level, so the cache is also invalidated by
+        // OS updates within a release, where icons can change without the SDK moving.
+        mSystemState = mSystemState.withLocaleAndBuild(
                 mContext.getResources().getConfiguration().getLocales().toLanguageTags(),
-                Build.VERSION.SDK_INT);
+                Build.VERSION.INCREMENTAL);
     }
 
     /**
