@@ -218,7 +218,59 @@ constructor(
             info = info.copy(themedBitmap = ThemedBitmap.NOT_SUPPORTED)
         }
 
+        // The system assigns a different badge color per managed profile, which the local
+        // BadgeProvider drawables cannot express.
+        (options.userHandle ?: options.userIconInfo?.user)?.let { info = info.withUser(it, this) }
+
         return info
+    }
+
+    /**
+     * User badges cached by (user, size), e.g. workspace badge (large) vs widget badge (small).
+     * In practice this holds one entry per profile; the cap only stops a caller that asks for many
+     * different sizes from growing it forever.
+     */
+    private val userBadges = HashMap<Pair<UserHandle, Int>, Bitmap>()
+
+    /**
+     * Returns the system supplied badge bitmap for [user], sized to badge an icon of [iconSize].
+     */
+    @JvmOverloads
+    fun getUserBadgeBitmap(user: UserHandle, iconSize: Int = iconBitmapSize): Bitmap {
+        val badgeSize = getBadgeSizeForIconSize(iconSize)
+        require(badgeSize <= iconBitmapSize) {
+            "badgeSize cannot be larger than iconBitmapSize: got $badgeSize, expected at most " +
+                "$iconBitmapSize"
+        }
+        synchronized(userBadges) {
+            val key = Pair(user, badgeSize)
+            userBadges[key]?.let {
+                return it
+            }
+
+            // PackageManager.getUserBadgedDrawableForDensity returns a badge that extends outside
+            // the badge circle whatever arguments it is given, and getUserBadgeForDensity is
+            // hidden. So draw into a full icon sized bitmap and crop the badge out of the corner.
+            var badgedBitmap = Bitmap.createBitmap(iconBitmapSize, iconBitmapSize, ARGB_8888)
+            val drawable =
+                context.packageManager.getUserBadgedIcon(
+                    BitmapDrawable(context.resources, badgedBitmap),
+                    user,
+                )
+            if (drawable is BitmapDrawable) {
+                badgedBitmap = drawable.bitmap
+            } else {
+                badgedBitmap.eraseColor(Color.TRANSPARENT)
+                val c = Canvas(badgedBitmap)
+                drawable.setBounds(0, 0, badgeSize, badgeSize)
+                drawable.draw(c)
+                c.setBitmap(null)
+            }
+            val cropOffset = max(iconBitmapSize - badgeSize, 0)
+            if (userBadges.size >= MAX_USER_BADGE_ENTRIES) userBadges.clear()
+            return Bitmap.createBitmap(badgedBitmap, cropOffset, cropOffset, badgeSize, badgeSize)
+                .also { userBadges[key] = it }
+        }
     }
 
     fun getBitmapFlagOp(options: IconOptions?): FlagOp {
@@ -455,6 +507,9 @@ constructor(
     }
 
     companion object {
+
+        /** Two badge sizes across a handful of profiles; this is plenty of room. */
+        private const val MAX_USER_BADGE_ENTRIES = 50
         private const val DEFAULT_WRAPPER_BACKGROUND = Color.WHITE
 
         // Ratio of icon visible area to full icon size for a square shaped icon

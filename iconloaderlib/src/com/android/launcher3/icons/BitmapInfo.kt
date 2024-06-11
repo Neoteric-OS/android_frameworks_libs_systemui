@@ -18,6 +18,8 @@ package com.android.launcher3.icons
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import android.os.Process
+import android.os.UserHandle
 import androidx.annotation.IntDef
 import com.android.launcher3.BadgeProvider
 import com.android.launcher3.BadgeProvider.BadgeType
@@ -49,6 +51,8 @@ data class BitmapInfo(
     val badgeInfo: BitmapInfo? = null,
     val delegateFactory: DelegateFactory = SimpleDelegateFactory,
     val badgeProvider: BadgeProvider = DefaultBadgeProvider,
+    /** System supplied badge for this icon's user, which distinguishes managed profiles */
+    val userBadge: Bitmap? = null,
 ) {
     @IntDef(
         flag = true,
@@ -71,6 +75,14 @@ data class BitmapInfo(
     annotation class DrawableCreationFlags
 
     fun withBadgeInfo(badgeInfo: BitmapInfo?) = copy(badgeInfo = badgeInfo)
+
+    /**
+     * Returns a bitmapInfo carrying the system supplied badge for [user]. The current user is
+     * never badged, so the flag based badges (instant apps in particular) still apply to it.
+     */
+    fun withUser(user: UserHandle?, iconFactory: BaseIconFactory) =
+        if (user == null || user == Process.myUserHandle()) copy(userBadge = null)
+        else copy(userBadge = iconFactory.getUserBadgeBitmap(user))
 
     /** Returns a bitmapInfo with the flagOP applied */
     fun withFlags(op: FlagOp): BitmapInfo =
@@ -151,11 +163,16 @@ data class BitmapInfo(
         }
         if (creationFlag.hasMask(FLAG_SKIP_USER_BADGE)) {
             return null
-        } else {
-            return getBadgeType()?.let {
-                return badgeProvider.getDrawable(context, it, creationFlag)
+        }
+        // A fresh drawable per call: the same badge bitmap backs icons of very different sizes
+        // (shortcut and widget badges are tiny), so the bounds must not be shared.
+        userBadge?.let {
+            return FastBitmapDrawable(it).apply {
+                setFilterBitmap(true)
+                setBounds(0, 0, it.width, it.height)
             }
         }
+        return getBadgeType()?.let { badgeProvider.getDrawable(context, it, creationFlag) }
     }
 
     /** Returns information about the badge to apply based on current flags. */
