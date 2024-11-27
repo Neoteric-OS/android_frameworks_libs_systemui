@@ -176,9 +176,17 @@ constructor(
                     InsetDrawable(icon, inset, inset, inset, inset),
                 )
         }
-        if (options.wrapNonAdaptiveIcon) tempIcon = wrapToAdaptiveIcon(tempIcon, options)
+        // An icon that carries CONFIG_HINT_NO_WRAP is already shaped by whoever supplied it (an
+        // icon pack). Wrapping it would shrink it, and the full bleed path would paint black
+        // behind its transparent corners and then re-mask it to the system shape, so skip both
+        // and draw it as-is.
+        val isPreShaped = tempIcon.changingConfigurations and CONFIG_HINT_NO_WRAP != 0
+        if (options.wrapNonAdaptiveIcon && !isPreShaped) {
+            tempIcon = wrapToAdaptiveIcon(tempIcon, options)
+        }
 
-        val drawFullBleed = options.drawFullBleed ?: drawFullBleedIcons
+        val drawFullBleed =
+            if (isPreShaped) false else (options.drawFullBleed ?: drawFullBleedIcons)
         val bitmap = drawableToBitmap(tempIcon, drawFullBleed, options)
         icon.bounds = oldBounds
 
@@ -328,13 +336,7 @@ constructor(
         icon as? AdaptiveIconDrawable
             ?: AdaptiveIconDrawable(
                     ColorDrawable(options?.wrapperBackgroundColor ?: DEFAULT_WRAPPER_BACKGROUND),
-                    // A drawable that already fills its own bounds, e.g. one an icon pack has
-                    // masked itself, must not be shrunk to the legacy icon scale on top of that.
-                    icon.wrapIntoSquareDrawable(
-                        if (icon.changingConfigurations and CONFIG_HINT_NO_WRAP == 0)
-                            LEGACY_ICON_SCALE
-                        else 1 - AdaptiveIconDrawable.getExtraInsetFraction()
-                    ),
+                    icon.wrapIntoSquareDrawable(LEGACY_ICON_SCALE),
                 )
                 .apply { setBounds(0, 0, 1, 1) }
 
@@ -516,7 +518,7 @@ constructor(
 
         /**
          * Hint set on a [Drawable.getChangingConfigurations] to say it is already shaped to fill
-         * the icon bounds, so wrapping it into an adaptive icon should not scale it down.
+         * the icon bounds, so it should be drawn as-is rather than wrapped or masked.
          */
         const val CONFIG_HINT_NO_WRAP: Int = 0x1000000
 
