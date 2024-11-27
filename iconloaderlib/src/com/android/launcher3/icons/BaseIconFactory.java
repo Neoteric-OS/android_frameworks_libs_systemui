@@ -240,20 +240,21 @@ public class BaseIconFactory implements AutoCloseable {
             // Need to convert to Adaptive Icon with insets to avoid cropping.
             tempIcon = createShapedAdaptiveIcon(bitmapDrawable.getBitmap());
         }
-        AdaptiveIconDrawable adaptiveIcon = normalizeAndWrapToAdaptiveIcon(tempIcon, scale);
-        Bitmap bitmap = createIconBitmap(adaptiveIcon, scale[0],
+        tempIcon = normalizeAndWrapToAdaptiveIcon(tempIcon, scale);
+        Bitmap bitmap = createIconBitmap(tempIcon, scale[0],
                 options == null ? MODE_WITH_SHADOW : options.mGenerationMode);
 
         int color = (options != null && options.mExtractedColor != null)
                 ? options.mExtractedColor : ColorExtractor.findDominantColorByHue(bitmap);
         BitmapInfo info = BitmapInfo.of(bitmap, color);
 
-        if (adaptiveIcon instanceof Extender extender) {
+        if (tempIcon instanceof Extender extender) {
             info = extender.getExtendedInfo(bitmap, color, this, scale[0]);
-        } else if (IconProvider.ATLEAST_T && mThemeController != null && adaptiveIcon != null) {
+        } else if (IconProvider.ATLEAST_T && mThemeController != null && tempIcon != null
+                && tempIcon instanceof AdaptiveIconDrawable) {
             info.setThemedBitmap(
                     mThemeController.createThemedBitmap(
-                        adaptiveIcon,
+                        (AdaptiveIconDrawable) tempIcon,
                         info,
                         this,
                         options == null ? null : options.mSourceHint
@@ -349,14 +350,19 @@ public class BaseIconFactory implements AutoCloseable {
     }
 
     @Nullable
-    protected AdaptiveIconDrawable normalizeAndWrapToAdaptiveIcon(
+    protected Drawable normalizeAndWrapToAdaptiveIcon(
             @Nullable Drawable icon, @NonNull final float[] outScale) {
         if (icon == null) {
             return null;
         }
 
         outScale[0] = IconNormalizer.ICON_VISIBLE_AREA_FACTOR;
-        return wrapToAdaptiveIcon(icon);
+
+        if ((icon.getChangingConfigurations() & CONFIG_HINT_NO_WRAP) == 0) {
+            return wrapToAdaptiveIcon(icon);
+        }
+
+        return icon;
     }
 
     /**
