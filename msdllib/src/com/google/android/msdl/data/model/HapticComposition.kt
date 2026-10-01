@@ -20,11 +20,13 @@ import android.os.VibrationEffect
 
 /**
  * A haptic composition as a list of [HapticCompositionPrimitive] and a [android.os.VibrationEffect]
- * to use as a fallback.
+ * to use as a fallback. [predefinedFallback] is a predefined effect id preferred over
+ * [fallbackEffect] when the vibrator supports it.
  */
 data class HapticComposition(
     val primitives: List<HapticCompositionPrimitive>,
     val fallbackEffect: VibrationEffect,
+    val predefinedFallback: Int? = null,
 )
 
 /**

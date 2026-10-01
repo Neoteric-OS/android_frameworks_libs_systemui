@@ -70,6 +70,7 @@ internal class MSDLRepositoryImpl : MSDLRepository {
                                 SPIN_WAVEFORM_AMPLITUDES,
                                 -1,
                             ),
+                            predefinedFallback = VibrationEffect.EFFECT_HEAVY_CLICK,
                         )
                     },
                 HapticToken.NEGATIVE_CONFIRMATION_MEDIUM_EMPHASIS to
@@ -97,6 +98,7 @@ internal class MSDLRepositoryImpl : MSDLRepository {
                                 intArrayOf(10, 255, 20, 0, 10, 255, 20, 0, 10, 255, 20),
                                 -1,
                             ),
+                            predefinedFallback = VibrationEffect.EFFECT_DOUBLE_CLICK,
                         )
                     },
                 HapticToken.POSITIVE_CONFIRMATION_HIGH_EMPHASIS to
@@ -119,6 +121,7 @@ internal class MSDLRepositoryImpl : MSDLRepository {
                                 intArrayOf(10, 255, 20, 0, 10, 255, 20),
                                 -1,
                             ),
+                            predefinedFallback = VibrationEffect.EFFECT_DOUBLE_CLICK,
                         )
                     },
                 HapticToken.POSITIVE_CONFIRMATION_MEDIUM_EMPHASIS to
@@ -141,6 +144,7 @@ internal class MSDLRepositoryImpl : MSDLRepository {
                                 intArrayOf(10, 255, 20, 0, 10, 255, 20),
                                 -1,
                             ),
+                            predefinedFallback = VibrationEffect.EFFECT_DOUBLE_CLICK,
                         )
                     },
                 HapticToken.POSITIVE_CONFIRMATION_LOW_EMPHASIS to
@@ -163,6 +167,7 @@ internal class MSDLRepositoryImpl : MSDLRepository {
                                 intArrayOf(100, 0, 10, 255, 20),
                                 -1,
                             ),
+                            predefinedFallback = VibrationEffect.EFFECT_CLICK,
                         )
                     },
                 HapticToken.NEUTRAL_CONFIRMATION_HIGH_EMPHASIS to
@@ -180,6 +185,7 @@ internal class MSDLRepositoryImpl : MSDLRepository {
                                 intArrayOf(5, 50, 20, 10),
                                 -1,
                             ),
+                            predefinedFallback = VibrationEffect.EFFECT_HEAVY_CLICK,
                         )
                     },
                 HapticToken.NEUTRAL_CONFIRMATION_MEDIUM_EMPHASIS to
@@ -275,6 +281,7 @@ internal class MSDLRepositoryImpl : MSDLRepository {
                                 intArrayOf(10, 30, 50, 10),
                                 -1,
                             ),
+                            predefinedFallback = VibrationEffect.EFFECT_TICK,
                         )
                     },
                 HapticToken.DRAG_INDICATOR_DISCRETE to

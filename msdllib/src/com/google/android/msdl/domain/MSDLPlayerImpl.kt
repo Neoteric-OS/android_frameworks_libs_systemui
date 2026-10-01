@@ -76,7 +76,7 @@ internal class MSDLPlayerImpl(
             val composition: HapticComposition? = hapticData?.get() as? HapticComposition
             val effect =
                 if (useHapticFallbackForToken[token] == true) {
-                    composition?.fallbackEffect
+                    composition?.let { fallbackEffectFor(it) }
                 } else {
                     when (properties) {
                         is InteractionProperties.DynamicVibrationScale -> {
@@ -109,6 +109,22 @@ internal class MSDLPlayerImpl(
         } else {
             // TODO(b/345248875): Play audio and haptics
         }
+    }
+
+    /** Cache of whether the vibrator supports a predefined effect id. */
+    private val predefinedSupport = HashMap<Int, Boolean>()
+
+    private fun fallbackEffectFor(composition: HapticComposition): VibrationEffect {
+        val id = composition.predefinedFallback ?: return composition.fallbackEffect
+        val supported =
+            synchronized(predefinedSupport) {
+                predefinedSupport.getOrPut(id) {
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                        vibrator.areEffectsSupported(id).first() ==
+                            Vibrator.VIBRATION_EFFECT_SUPPORT_YES
+                }
+            }
+        return if (supported) VibrationEffect.createPredefined(id) else composition.fallbackEffect
     }
 
     override fun getHistory(): List<MSDLEvent> = historyLogger.getHistory()
